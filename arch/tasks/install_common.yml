@@ -1,0 +1,52 @@
+- name: Instalar Pacotes Gerais
+  become: true
+  block:
+  - name: Atualizar a lista de pacotes com yay
+    command: yay -Syu --noconfirm
+    register: yay_update
+    failed_when: yay_update.rc != 0
+
+  - name: Instalar o Firefox via yay
+    command: yay -S --noconfirm firefox
+    register: firefox_install
+    failed_when: firefox_install.rc != 0
+
+  - name: Verificar se o Firefox foi instalado corretamente
+    command: firefox --version
+    register: firefox_version
+    changed_when: false
+    failed_when: firefox_version.rc != 0
+
+  - name: Exibir versão do Firefox
+    debug:
+      msg: "Firefox foi instalado, versão: {{ firefox_version.stdout }}"
+
+  - name: Instalar o Transmission via yay
+    command: yay -S --noconfirm transmission-gtk
+    register: transmission_install
+    failed_when: transmission_install.rc != 0
+
+  - name: Verificar se o Transmission foi instalado corretamente
+    command: transmission-gtk --version
+    register: transmission_version
+    changed_when: false
+    failed_when: transmission_version.rc != 0
+
+  - name: Exibir versão do Transmission
+    debug:
+      msg: "Transmission foi instalado, versão: {{ transmission_version.stdout }}"
+
+  rescue:
+  - name: Exibir erro caso algo falhe
+    debug:
+      msg: "Ocorreu um erro ao tentar instalar o Firefox ou Transmission."
+
+  always:
+  - name: Limpar após falha ou sucesso
+    file:
+      path: /tmp/firefox_install
+      state: absent
+  - name: Limpar após falha ou sucesso
+    file:
+      path: /tmp/transmission_install
+      state: absent

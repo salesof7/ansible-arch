@@ -1,0 +1,93 @@
+- name: Configuração do terminal com Zsh e ferramentas
+  become: true
+  block:
+  - name: Atualizar pacotes e instalar dependências
+    pacman:
+      name:
+      - zsh
+      - bat
+      - git
+      - base-devel
+      - tree
+      - neofetch
+      state: present
+
+  - name: Instalar o zsh-autosuggestions com o git
+    git:
+      repo: 'https://github.com/zsh-users/zsh-autosuggestions.git'
+      dest: '/home/{{ ansible_user }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions'
+      clone: yes
+      update: yes
+      version: master
+
+  - name: Instalar o zod com o git
+    git:
+      repo: 'https://github.com/zdharma/zod.git'
+      dest: '/home/{{ ansible_user }}/.oh-my-zsh/custom/plugins/zod'
+      clone: yes
+      update: yes
+      version: master
+
+  - name: Baixar e configurar o oh-my-zsh
+    shell: |
+      wget https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O - | sh
+    args:
+      creates: "/home/{{ ansible_user }}/.oh-my-zsh"
+
+  - name: Alterar o shell padrão para zsh
+    user:
+      name: "{{ ansible_user }}"
+      shell: /usr/bin/zsh
+
+  - name: Criar ou modificar o arquivo .zshrc para habilitar os plugins
+    lineinfile:
+      path: "/home/{{ ansible_user }}/.zshrc"
+      line: "{{ item }}"
+      create: yes
+    loop:
+    - "export ZSH=\"$HOME/.oh-my-zsh\""
+    - "ZSH_THEME=\"robbyrussell\""
+    - "plugins=(git zsh-autosuggestions zod)"
+    - "source $ZSH/oh-my-zsh.sh"
+    become: false
+
+  - name: Verificar a instalação do bat
+    command: bat --version
+    register: bat_version
+    changed_when: false
+    failed_when: bat_version.rc != 0
+
+  - name: Exibir versão do bat
+    debug:
+      msg: "O bat foi instalado com sucesso. Versão: {{ bat_version.stdout }}"
+
+  - name: Verificar a instalação do tree
+    command: tree --version
+    register: tree_version
+    changed_when: false
+    failed_when: tree_version.rc != 0
+
+  - name: Exibir versão do tree
+    debug:
+      msg: "O tree foi instalado com sucesso. Versão: {{ tree_version.stdout }}"
+
+  - name: Verificar a instalação do neofetch
+    command: neofetch --version
+    register: neofetch_version
+    changed_when: false
+    failed_when: neofetch_version.rc != 0
+
+  - name: Exibir versão do neofetch
+    debug:
+      msg: "O neofetch foi instalado com sucesso. Versão: {{ neofetch_version.stdout }}"
+
+  rescue:
+  - name: Exibir erro caso algo falhe
+    debug:
+      msg: "Ocorreu um erro ao tentar configurar o terminal."
+
+  always:
+  - name: Limpar após falha ou sucesso
+    file:
+      path: /tmp/terminal_setup
+      state: absent

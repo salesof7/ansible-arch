@@ -1,0 +1,33 @@
+- name: Instalar pacotes para UDS
+  become: true
+  block:
+  - name: Atualizar a lista de pacotes com yay
+    command: yay -Syu --noconfirm
+    register: yay_update
+    failed_when: yay_update.rc != 0
+
+  - name: Instalar o OpenVPN via yay
+    command: yay -S --noconfirm openvpn
+    register: openvpn_install
+    failed_when: openvpn_install.rc != 0
+
+  - name: Verificar se o OpenVPN foi instalado corretamente
+    command: openvpn --version
+    register: openvpn_version
+    changed_when: false
+    failed_when: openvpn_version.rc != 0
+
+  - name: Exibir versão do OpenVPN
+    debug:
+      msg: "OpenVPN foi instalado, versão: {{ openvpn_version.stdout }}"
+
+  rescue:
+  - name: Exibir erro caso algo falhe
+    debug:
+      msg: "Ocorreu um erro ao tentar instalar o OpenVPN."
+
+  always:
+  - name: Limpar após falha ou sucesso
+    file:
+      path: /tmp/openvpn_install
+      state: absent

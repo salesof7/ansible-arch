@@ -1,0 +1,54 @@
+---
+- name: Instalar o yay
+  become: true
+  block:
+  - name: Instalar pacotes necessários
+    pacman:
+      name:
+      - base-devel
+      - git
+      state: present
+    register: pacman_install
+    failed_when: pacman_install.rc != 0
+
+  - name: Clonar repositório do yay
+    git:
+      repo: https://aur.archlinux.org/yay.git
+      dest: /tmp/yay
+    register: yay_clone
+    failed_when: yay_clone.rc != 0
+
+  - name: Compilar e instalar yay
+    command: makepkg -si --noconfirm
+    args:
+      chdir: /tmp/yay
+    register: yay_install
+    failed_when: yay_install.rc != 0
+
+  - name: Limpar arquivos temporários
+    file:
+      path: /tmp/yay
+      state: absent
+    register: cleanup_yay
+    failed_when: cleanup_yay.rc != 0
+
+  - name: Verificar se o yay foi instalado corretamente
+    command: yay --version
+    register: yay_version
+    changed_when: false
+    failed_when: yay_version.rc != 0
+
+  - name: Exibir versão do yay
+    debug:
+      msg: "yay foi instalado com sucesso, versão: {{ yay_version.stdout }}"
+
+  rescue:
+  - name: Exibir erro caso algo falhe
+    debug:
+      msg: "Ocorreu um erro ao tentar instalar o yay."
+
+  always:
+  - name: Limpar arquivos temporários após falha ou sucesso
+    file:
+      path: /tmp/yay
+      state: absent

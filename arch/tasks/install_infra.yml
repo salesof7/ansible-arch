@@ -1,0 +1,78 @@
+- name: Instalar Kubernetes, Terraform e Terragrunt
+  become: true
+  block:
+  - name: Atualizar a lista de pacotes com yay
+    command: yay -Syu --noconfirm
+    register: yay_update
+    failed_when: yay_update.rc != 0
+
+  - name: Instalar o Terraform via yay
+    command: yay -S --noconfirm terraform
+    register: terraform_install
+    failed_when: terraform_install.rc != 0
+
+  - name: Instalar Terragrunt via yay
+    command: yay -S --noconfirm terragrunt
+    register: terragrunt_install
+    failed_when: terragrunt_install.rc != 0
+
+  - name: Instalar as dependências do Kubernetes (kubeadm, kubelet, kubectl)
+    command: yay -S --noconfirm kubeadm kubectl kubelet
+    register: kubernetes_install
+    failed_when: kubernetes_install.rc != 0
+
+  - name: Instalar o Docker (necessário para Kubernetes)
+    pacman:
+      name: docker
+      state: present
+    register: docker_install
+    failed_when: docker_install.rc != 0
+
+  - name: Habilitar e iniciar o serviço Docker
+    systemd:
+      name: docker
+      enabled: true
+      state: started
+    register: docker_service
+    failed_when: docker_service.rc != 0
+
+  - name: Verificar se o Terraform foi instalado corretamente
+    command: terraform --version
+    register: terraform_version
+    changed_when: false
+    failed_when: terraform_version.rc != 0
+
+  - name: Exibir versão do Terraform
+    debug:
+      msg: "Terraform foi instalado, versão: {{ terraform_version.stdout }}"
+
+  - name: Verificar se o Terragrunt foi instalado corretamente
+    command: terragrunt --version
+    register: terragrunt_version
+    changed_when: false
+    failed_when: terragrunt_version.rc != 0
+
+  - name: Exibir versão do Terragrunt
+    debug:
+      msg: "Terragrunt foi instalado, versão: {{ terragrunt_version.stdout }}"
+
+  - name: Verificar se o Kubernetes foi instalado corretamente
+    command: kubectl version --client
+    register: kubernetes_version
+    changed_when: false
+    failed_when: kubernetes_version.rc != 0
+
+  - name: Exibir versão do Kubernetes
+    debug:
+      msg: "Kubernetes foi instalado, versão: {{ kubernetes_version.stdout }}"
+
+  rescue:
+  - name: Exibir erro caso algo falhe
+    debug:
+      msg: "Ocorreu um erro ao tentar instalar o Kubernetes, Terraform ou Terragrunt."
+
+  always:
+  - name: Limpar após falha ou sucesso
+    file:
+      path: /tmp/kubernetes_terraform_terragrunt_install
+      state: absent

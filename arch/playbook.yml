@@ -1,0 +1,30 @@
+---
+- name: Playbook para configurar o ambiente
+  hosts: all
+  become: true
+
+  vars_files:
+  - vars/main.yml
+
+  tasks:
+  - name: Instalar pacotes comuns
+    include_tasks: tasks/install_common.yml
+
+  - name: Instalar pacotes de desenvolvimento
+    include_tasks: tasks/install_develop.yml
+
+  - name: Instalar pacotes para infraestrutura
+    include_tasks: tasks/install_infra.yml
+
+  - name: Instalar pacotes para terminal
+    include_tasks: tasks/install_terminal.yml
+
+  - name: Instalar pacotes para UDS
+    include_tasks: tasks/install_uds.yml
+
+  - name: Instalar yay
+    include_tasks: tasks/install_yay.yml
+
+  handlers:
+  - name: Reiniciar o serviço
+    include_tasks: handlers/main.yml

@@ -1,0 +1,138 @@
+- name: Instalar ferramentas de desenvolvimento com yay
+  become: true
+  block:
+  - name: Atualizar a lista de pacotes com yay
+    command: yay -Syu --noconfirm
+    register: yay_update
+    failed_when: yay_update.rc != 0
+
+  - name: Instalar o Visual Studio Code (VSCode) via yay
+    command: yay -S --noconfirm visual-studio-code-bin
+    register: vscode_install
+    failed_when: vscode_install.rc != 0
+
+  - name: Instalar a AWS CLI v2 via yay
+    command: yay -S --noconfirm aws-cli-v2
+    register: awscli_install
+    failed_when: awscli_install.rc != 0
+
+  - name: Instalar o DBeaver via yay
+    command: yay -S --noconfirm dbeaver
+    register: dbeaver_install
+    failed_when: dbeaver_install.rc != 0
+
+  - name: Instalar o Node.js via yay
+    command: yay -S --noconfirm nodejs
+    register: nodejs_install
+    failed_when: nodejs_install.rc != 0
+
+  - name: Instalar o NPM (caso o Node.js não tenha instalado automaticamente)
+    command: yay -S --noconfirm npm
+    register: npm_install
+    failed_when: npm_install.rc != 0
+
+  - name: Instalar o Go via yay
+    command: yay -S --noconfirm go
+    register: go_install
+    failed_when: go_install.rc != 0
+
+  - name: Instalar o Cargo via yay
+    command: yay -S --noconfirm cargo
+    register: cargo_install
+    failed_when: cargo_install.rc != 0
+
+  - name: Instalar o Postman via yay
+    command: yay -S --noconfirm postman
+    register: postman_install
+    failed_when: postman_install.rc != 0
+
+  - name: Verificar se o VSCode foi instalado corretamente
+    command: code --version
+    register: vscode_version
+    changed_when: false
+    failed_when: vscode_version.rc != 0
+
+  - name: Exibir versão do VSCode
+    debug:
+      msg: "VSCode foi instalado, versão: {{ vscode_version.stdout }}"
+
+  - name: Verificar se a AWS CLI v2 foi instalada corretamente
+    command: aws --version
+    register: awscli_version
+    changed_when: false
+    failed_when: awscli_version.rc != 0
+
+  - name: Exibir versão da AWS CLI
+    debug:
+      msg: "AWS CLI v2 foi instalada, versão: {{ awscli_version.stdout }}"
+
+  - name: Verificar se o DBeaver foi instalado corretamente
+    command: dbeaver --version
+    register: dbeaver_version
+    changed_when: false
+    failed_when: dbeaver_version.rc != 0
+
+  - name: Exibir versão do DBeaver
+    debug:
+      msg: "DBeaver foi instalado, versão: {{ dbeaver_version.stdout }}"
+
+  - name: Verificar se o Node.js foi instalado corretamente
+    command: node --version
+    register: nodejs_version
+    changed_when: false
+    failed_when: nodejs_version.rc != 0
+
+  - name: Exibir versão do Node.js
+    debug:
+      msg: "Node.js foi instalado, versão: {{ nodejs_version.stdout }}"
+
+  - name: Verificar se o NPM foi instalado corretamente
+    command: npm --version
+    register: npm_version
+    changed_when: false
+    failed_when: npm_version.rc != 0
+
+  - name: Exibir versão do NPM
+    debug:
+      msg: "NPM foi instalado, versão: {{ npm_version.stdout }}"
+
+  - name: Verificar se o Go foi instalado corretamente
+    command: go version
+    register: go_version
+    changed_when: false
+    failed_when: go_version.rc != 0
+
+  - name: Exibir versão do Go
+    debug:
+      msg: "Go foi instalado, versão: {{ go_version.stdout }}"
+
+  - name: Verificar se o Cargo foi instalado corretamente
+    command: cargo --version
+    register: cargo_version
+    changed_when: false
+    failed_when: cargo_version.rc != 0
+
+  - name: Exibir versão do Cargo
+    debug:
+      msg: "Cargo foi instalado, versão: {{ cargo_version.stdout }}"
+
+  - name: Verificar se o Postman foi instalado corretamente
+    command: postman --version
+    register: postman_version
+    changed_when: false
+    failed_when: postman_version.rc != 0
+
+  - name: Exibir versão do Postman
+    debug:
+      msg: "Postman foi instalado, versão: {{ postman_version.stdout }}"
+
+  rescue:
+  - name: Exibir erro caso algo falhe
+    debug:
+      msg: "Ocorreu um erro ao tentar instalar as ferramentas de desenvolvimento."
+
+  always:
+  - name: Limpar após falha ou sucesso
+    file:
+      path: /tmp/develop_install
+      state: absent
