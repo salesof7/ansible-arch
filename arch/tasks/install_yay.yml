@@ -1,9 +1,14 @@
----
-- name: Instalar o yay
+- name: Verificar se o yay já está instalado
+  command: yay --version
+  register: yay_check
+  failed_when: false
+  changed_when: false
+
+- name: Instalar o yay se não estiver instalado
   become: true
   block:
   - name: Instalar pacotes necessários
-    pacman:
+    community.general.pacman:
       name:
       - base-devel
       - git
@@ -42,6 +47,12 @@
     debug:
       msg: "yay foi instalado com sucesso, versão: {{ yay_version.stdout }}"
 
+  - name: Atualizar a lista de pacotes com yay
+    command: yay -Syu --noconfirm
+    register: yay_update
+    failed_when: yay_update.rc != 0
+
+  when: yay_check.rc != 0
   rescue:
   - name: Exibir erro caso algo falhe
     debug:

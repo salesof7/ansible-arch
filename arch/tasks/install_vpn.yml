@@ -1,15 +1,17 @@
-- name: Instalar pacotes para UDS
+- name: Instalar OpenVPN
   become: true
   block:
-  - name: Atualizar a lista de pacotes com yay
-    command: yay -Syu --noconfirm
-    register: yay_update
-    failed_when: yay_update.rc != 0
+  - name: Verificar se o OpenVPN já está instalado
+    command: yay -Qi openvpn
+    register: openvpn_check
+    failed_when: false
+    changed_when: false
 
-  - name: Instalar o OpenVPN via yay
+  - name: Instalar o OpenVPN via yay se não estiver instalado
     command: yay -S --noconfirm openvpn
     register: openvpn_install
     failed_when: openvpn_install.rc != 0
+    when: openvpn_check.rc != 0
 
   - name: Verificar se o OpenVPN foi instalado corretamente
     command: openvpn --version

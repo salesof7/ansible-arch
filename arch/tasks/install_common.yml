@@ -1,13 +1,15 @@
 - name: Instalar Pacotes Gerais
-  become: true
+  become: false
   block:
-  - name: Atualizar a lista de pacotes com yay
-    command: yay -Syu --noconfirm
-    register: yay_update
-    failed_when: yay_update.rc != 0
+  - name: Verificar se o Firefox já está instalado
+    command: pacman -Qi firefox
+    register: firefox_check
+    failed_when: false
+    changed_when: false
 
-  - name: Instalar o Firefox via yay
-    command: yay -S --noconfirm firefox
+  - name: Instalar o Firefox via yay se não estiver instalado
+    command: yay --noconfirm -S firefox
+    when: firefox_check.rc != 0
     register: firefox_install
     failed_when: firefox_install.rc != 0
 
@@ -21,8 +23,15 @@
     debug:
       msg: "Firefox foi instalado, versão: {{ firefox_version.stdout }}"
 
-  - name: Instalar o Transmission via yay
-    command: yay -S --noconfirm transmission-gtk
+  - name: Verificar se o Transmission já está instalado
+    command: pacman -Qi transmission-gtk
+    register: transmission_check
+    failed_when: false
+    changed_when: false
+
+  - name: Instalar o Transmission via yay se não estiver instalado
+    command: yay --noconfirm -S transmission-gtk
+    when: transmission_check.rc != 0
     register: transmission_install
     failed_when: transmission_install.rc != 0
 
@@ -36,17 +45,44 @@
     debug:
       msg: "Transmission foi instalado, versão: {{ transmission_version.stdout }}"
 
+  - name: Verificar se o Discord já está instalado
+    command: pacman -Qi discord
+    register: discord_check
+    failed_when: false
+    changed_when: false
+
+  - name: Instalar o Discord via yay se não estiver instalado
+    command: yay --noconfirm -S discord
+    when: discord_check.rc != 0
+    register: discord_install
+    failed_when: discord_install.rc != 0
+  # - name: Verificar se o Discord foi instalado corretamente
+  #   command: discord --version
+  #   register: discord_version
+  #   changed_when: false
+  #   failed_when: discord_version.rc != 0
+
+  # - name: Exibir versão do Discord
+  #   debug:
+  #     msg: "Discord foi instalado, versão: {{ discord_version.stdout }}"
+
   rescue:
   - name: Exibir erro caso algo falhe
     debug:
-      msg: "Ocorreu um erro ao tentar instalar o Firefox ou Transmission."
+      msg: "Ocorreu um erro ao tentar instalar o Firefox, Transmission ou Discord."
 
   always:
   - name: Limpar após falha ou sucesso
     file:
       path: /tmp/firefox_install
       state: absent
+
   - name: Limpar após falha ou sucesso
     file:
       path: /tmp/transmission_install
+      state: absent
+
+  - name: Limpar após falha ou sucesso
+    file:
+      path: /tmp/discord_install
       state: absent

@@ -1,55 +1,126 @@
-- name: Configuração do terminal com Zsh e ferramentas
+---
+- name: Configuração do Terminal
   become: true
+  vars:
+    ansible_user: "salesof7"
+
   block:
-  - name: Atualizar pacotes e instalar dependências
+  - name: Verificar se o AWS CLI v2 está instalado
+    command: yay -Qi aws-cli-v2
+    register: aws_cli_installed
+    failed_when: false
+    changed_when: false
+
+  - name: Instalar o aws-cli-v2 se não estiver instalado
     pacman:
-      name:
-      - zsh
-      - bat
-      - git
-      - base-devel
-      - tree
-      - neofetch
+      name: aws-cli-v2
       state: present
+    when: aws_cli_installed.rc != 0
+    register: aws_cli_install
+    failed_when: aws_cli_install.rc != 0
 
-  - name: Instalar o zsh-autosuggestions com o git
-    git:
-      repo: 'https://github.com/zsh-users/zsh-autosuggestions.git'
-      dest: '/home/{{ ansible_user }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions'
-      clone: yes
-      update: yes
-      version: master
+  - name: Verificar se o bat está instalado
+    command: yay -Qi bat
+    register: bat_installed
+    failed_when: false
+    changed_when: false
 
-  - name: Instalar o zod com o git
-    git:
-      repo: 'https://github.com/zdharma/zod.git'
-      dest: '/home/{{ ansible_user }}/.oh-my-zsh/custom/plugins/zod'
-      clone: yes
-      update: yes
-      version: master
+  - name: Instalar o bat se não estiver instalado
+    pacman:
+      name: bat
+      state: present
+    when: bat_installed.rc != 0
+    register: bat_install
+    failed_when: bat_install.rc != 0
 
-  - name: Baixar e configurar o oh-my-zsh
+  - name: Verificar se o tree está instalado
+    command: yay -Qi tree
+    register: tree_installed
+    failed_when: false
+    changed_when: false
+
+  - name: Instalar o tree se não estiver instalado
+    pacman:
+      name: tree
+      state: present
+    when: tree_installed.rc != 0
+    register: tree_install
+    failed_when: tree_install.rc != 0
+
+  - name: Verificar se o xsel está instalado
+    command: yay -Qi xsel
+    register: xsel_installed
+    failed_when: false
+    changed_when: false
+
+  - name: Instalar o xsel se não estiver instalado
+    pacman:
+      name: xsel
+      state: present
+    when: xsel_installed.rc != 0
+    register: xsel_install
+    failed_when: xsel_install.rc != 0
+
+  - name: Verificar se o neofetch está instalado
+    command: yay -Qi neofetch
+    register: neofetch_installed
+    failed_when: false
+    changed_when: false
+
+  - name: Instalar o neofetch se não estiver instalado
+    pacman:
+      name: neofetch
+      state: present
+    when: neofetch_installed.rc != 0
+    register: neofetch_install
+    failed_when: neofetch_install.rc != 0
+
+  - name: Verificar se o Zsh está instalado
+    command: yay -Qi zsh
+    register: zsh_installed
+    failed_when: false
+    changed_when: false
+
+  - name: Instalar o Zsh se não estiver instalado
+    pacman:
+      name: zsh
+      state: present
+    when: zsh_installed.rc != 0
+    register: zsh_install
+    failed_when: zsh_install.rc != 0
+
+  - name: Verificar se o Oh My Zsh-git está instalado
+    command: yay -Qi oh-my-zsh-git
+    register: oh_my_zsh_installed
+    failed_when: false
+    changed_when: false
+
+  - name: Instalar o oh-my-zsh-git se não estiver instalado
+    pacman:
+      name: oh-my-zsh-git
+      state: present
+    when: oh_my_zsh_installed.rc != 0
+    register: oh_my_zsh_install
+    failed_when: oh_my_zsh_install.rc != 0
+
+  - name: Definir o shell de login para Zsh
+    command: chsh -s /usr/bin/zsh {{ ansible_user }}
+
+  - name: Substituir o arquivo .zshrc
+    copy:
+      src: files/.zshrc
+      dest: "/home/{{ ansible_user }}/.zshrc"
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+      mode: '0644'
+    register: zshrc_copy
+
+  - name: Reiniciar Zsh
     shell: |
-      wget https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O - | sh
-    args:
-      creates: "/home/{{ ansible_user }}/.oh-my-zsh"
-
-  - name: Alterar o shell padrão para zsh
-    user:
-      name: "{{ ansible_user }}"
-      shell: /usr/bin/zsh
-
-  - name: Criar ou modificar o arquivo .zshrc para habilitar os plugins
-    lineinfile:
-      path: "/home/{{ ansible_user }}/.zshrc"
-      line: "{{ item }}"
-      create: yes
-    loop:
-    - "export ZSH=\"$HOME/.oh-my-zsh\""
-    - "ZSH_THEME=\"robbyrussell\""
-    - "plugins=(git zsh-autosuggestions zod)"
-    - "source $ZSH/oh-my-zsh.sh"
+      exec zsh
     become: false
+    async: 1
+    poll: 0
 
   - name: Verificar a instalação do bat
     command: bat --version
@@ -70,16 +141,6 @@
   - name: Exibir versão do tree
     debug:
       msg: "O tree foi instalado com sucesso. Versão: {{ tree_version.stdout }}"
-
-  - name: Verificar a instalação do neofetch
-    command: neofetch --version
-    register: neofetch_version
-    changed_when: false
-    failed_when: neofetch_version.rc != 0
-
-  - name: Exibir versão do neofetch
-    debug:
-      msg: "O neofetch foi instalado com sucesso. Versão: {{ neofetch_version.stdout }}"
 
   rescue:
   - name: Exibir erro caso algo falhe

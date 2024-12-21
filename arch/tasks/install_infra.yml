@@ -1,40 +1,17 @@
 - name: Instalar Kubernetes, Terraform e Terragrunt
   become: true
   block:
-  - name: Atualizar a lista de pacotes com yay
-    command: yay -Syu --noconfirm
-    register: yay_update
-    failed_when: yay_update.rc != 0
+  - name: Verificar se o Terraform está instalado
+    command: yay -Qi terraform
+    register: terraform_check
+    failed_when: false
+    changed_when: false
 
-  - name: Instalar o Terraform via yay
+  - name: Instalar o Terraform via yay se não estiver instalado
     command: yay -S --noconfirm terraform
+    when: terraform_check.rc != 0
     register: terraform_install
     failed_when: terraform_install.rc != 0
-
-  - name: Instalar Terragrunt via yay
-    command: yay -S --noconfirm terragrunt
-    register: terragrunt_install
-    failed_when: terragrunt_install.rc != 0
-
-  - name: Instalar as dependências do Kubernetes (kubeadm, kubelet, kubectl)
-    command: yay -S --noconfirm kubeadm kubectl kubelet
-    register: kubernetes_install
-    failed_when: kubernetes_install.rc != 0
-
-  - name: Instalar o Docker (necessário para Kubernetes)
-    pacman:
-      name: docker
-      state: present
-    register: docker_install
-    failed_when: docker_install.rc != 0
-
-  - name: Habilitar e iniciar o serviço Docker
-    systemd:
-      name: docker
-      enabled: true
-      state: started
-    register: docker_service
-    failed_when: docker_service.rc != 0
 
   - name: Verificar se o Terraform foi instalado corretamente
     command: terraform --version
@@ -46,6 +23,18 @@
     debug:
       msg: "Terraform foi instalado, versão: {{ terraform_version.stdout }}"
 
+  - name: Verificar se o Terragrunt está instalado
+    command: yay -Qi terragrunt
+    register: terragrunt_check
+    failed_when: false
+    changed_when: false
+
+  - name: Instalar Terragrunt via yay se não estiver instalado
+    command: yay -S --noconfirm terragrunt
+    when: terragrunt_check.rc != 0
+    register: terragrunt_install
+    failed_when: terragrunt_install.rc != 0
+
   - name: Verificar se o Terragrunt foi instalado corretamente
     command: terragrunt --version
     register: terragrunt_version
@@ -56,6 +45,18 @@
     debug:
       msg: "Terragrunt foi instalado, versão: {{ terragrunt_version.stdout }}"
 
+  - name: Verificar se o Kubernetes (kubectl) está instalado
+    command: yay -Qi kubectl
+    register: kubernetes_check
+    failed_when: false
+    changed_when: false
+
+  - name: Instalar as dependências do Kubernetes se não estiverem instaladas
+    command: yay -S --noconfirm kubeadm kubectl kubelet
+    when: kubernetes_check.rc != 0
+    register: kubernetes_install
+    failed_when: kubernetes_install.rc != 0
+
   - name: Verificar se o Kubernetes foi instalado corretamente
     command: kubectl version --client
     register: kubernetes_version
@@ -65,6 +66,32 @@
   - name: Exibir versão do Kubernetes
     debug:
       msg: "Kubernetes foi instalado, versão: {{ kubernetes_version.stdout }}"
+
+  - name: Verificar se o Docker está instalado
+    command: yay -Qi docker
+    register: docker_check
+    failed_when: false
+    changed_when: false
+
+  - name: Instalar o Docker se não estiver instalado
+    pacman:
+      name: docker
+      state: present
+    register: docker_install
+    failed_when: docker_install.rc != 0
+    when: docker_check.rc != 0
+
+  - name: Habilitar e iniciar o serviço Docker
+    systemd:
+      name: docker
+      enabled: true
+      state: started
+    register: docker_service
+    failed_when: docker_service.rc != 0
+
+  - name: Exibir versão do Docker
+    debug:
+      msg: "Docker foi instalado e iniciado com sucesso."
 
   rescue:
   - name: Exibir erro caso algo falhe
